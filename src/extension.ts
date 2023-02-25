@@ -15,11 +15,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   app.use(function (req, res, next) {
     if (req.url.startsWith('/starter.zip')) {
-      console.log(`**************************${req.url}`);
-      res.status(200).end();
-      return;
+      WebsitePanel.hide();
+      return res.status(204).send();
     }
-    // when done, call next()
     next();
 });
 
@@ -28,12 +26,6 @@ export function activate(context: vscode.ExtensionContext) {
       target: 'https://start.spring.io/',
       changeOrigin: true,
       followRedirects: true,
-      // onProxyReq: (proxyReq, req, res) => {
-      //   if (req.url.startsWith('/starter.zip')) {
-      //     console.log(`**************************${req.url}`);
-      //     res.status(200).end();
-      //   }
-      // },
       onProxyRes: (proxyRes, req, res) => {
         delete proxyRes.headers['x-frame-options'];
         delete proxyRes.headers['X-Frame-Options'];
@@ -92,6 +84,13 @@ class WebsitePanel {
     );
 
     WebsitePanel.currentPanel = new WebsitePanel(panel, extensionUri);
+  }
+
+  public static hide() {
+    if (WebsitePanel.currentPanel) {
+      WebsitePanel.currentPanel._panel.dispose();
+      WebsitePanel.currentPanel = undefined;
+    }
   }
 
   public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
