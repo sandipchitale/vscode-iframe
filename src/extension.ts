@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   app.listen(port, () => {
-    console.log(`Proxy listening at http://localhost:${port}`);
+    // console.log(`Proxy listening at http://localhost:${port}`);
   });
 }
 
