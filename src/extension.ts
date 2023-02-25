@@ -2,7 +2,13 @@ import * as express from 'express';
 import { createProxyMiddleware, responseInterceptor } from 'http-proxy-middleware';
 import * as vscode from 'vscode';
 
+import * as path from 'path';
+import * as os from 'os';
+import * as download from 'download';
+
 const port = 7654;
+
+const START_SPRING_IO = 'https://start.spring.io';
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -16,6 +22,31 @@ export function activate(context: vscode.ExtensionContext) {
   app.use(function (req, res, next) {
     if (req.url.startsWith('/starter.zip')) {
       WebsitePanel.hide();
+      setTimeout(async () => {
+        const projectName = req.url.replace(/.+&baseDir=/, '').replace(/&.+/, '');
+        if (projectName) {
+          const extractDirectoryUris: vscode.Uri[] | undefined = await vscode.window.showOpenDialog({
+            defaultUri: vscode.Uri.file(os.tmpdir()),
+            canSelectFiles: false,
+            canSelectFolders: true,
+            canSelectMany: false,
+            openLabel: 'Extract',
+            title: `Directory to extract project ${projectName}`
+          });
+          if (extractDirectoryUris && extractDirectoryUris.length > 0) {
+            try {
+              await download(`${START_SPRING_IO}${req.url}`, extractDirectoryUris[0].fsPath, {
+                extract: true
+              });
+              vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(path.join(extractDirectoryUris[0].fsPath, projectName)), {
+                forceNewWindow: true
+              });
+            } catch (error) {
+              //
+            }
+          }
+        }
+      }, 0);
       return res.status(204).send();
     }
     next();
@@ -23,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   app.use('/**',
     createProxyMiddleware({
-      target: 'https://start.spring.io/',
+      target: START_SPRING_IO,
       changeOrigin: true,
       followRedirects: true,
       onProxyRes: (proxyRes, req, res) => {
